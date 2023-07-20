@@ -1,0 +1,383 @@
+import 'package:flutter/material.dart';
+int totalExpense = 0;
+
+void main() {
+  runApp(BudgetTrackerApp());
+}
+
+class BudgetTrackerApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Budget Tracker',
+      theme: ThemeData(
+        primaryColor: Colors.blue[200],
+        primaryColorDark: Colors.blue[600], // Updated accent color
+        scaffoldBackgroundColor: Colors.blue[850],
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue[100],
+      appBar: AppBar(
+
+        title: Text(
+          '₹Budget Tracker₹',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+      ),
+
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(height: 70),
+            Icon(
+              Icons.person,
+              size:150,
+              color: Theme.of(context).primaryColorDark, // Use updated accent color
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ExpenseScreen(),
+                  ),
+                );
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Replace with the desired icon
+                  // Adjust the spacing between the icon and text
+                  Text(
+                    'Total Expense: ₹$totalExpense',
+                    style: TextStyle(fontSize: 30),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_circle_down),
+                ],
+              ),
+            )
+
+
+
+
+
+
+
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddExpenseScreen(),
+            ),
+          ).then((newCard) {
+            if (newCard != null) {
+              // Add the new expense card to the list
+              expenseCards.add(newCard);
+              // Update the expense screen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ExpenseScreen(),
+                ),
+              );
+            }
+          });
+        },
+        child: Icon(Icons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class ExpenseScreen extends StatefulWidget {
+  @override
+  _ExpenseScreenState createState() => _ExpenseScreenState();
+}
+
+class _ExpenseScreenState extends State<ExpenseScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    calculateTotalExpense();
+  }
+
+  void calculateTotalExpense() {
+    int calculatedTotalExpense = 0;
+    for (var card in expenseCards) {
+      calculatedTotalExpense += card.value;
+    }
+    setState(() {
+      totalExpense = calculatedTotalExpense;
+    });
+  }
+
+  void deleteCard(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirmation'),
+        content: Text('Are you sure you want to delete this card?'),
+        actions: [
+
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                expenseCards.removeAt(index);
+                calculateTotalExpense();
+              });
+              Navigator.pop(context);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue[100],
+      appBar: AppBar(
+        title: Text(
+          'Expense Screen',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(),
+              ),
+            );
+
+          },
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child:Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Total Expense',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '₹ $totalExpense',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              ),
+            ),
+            SizedBox(height: 24),
+            Text(
+              'Expense List',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: expenseCards.length,
+                itemBuilder: (context, index) {
+                  return ExpenseCardWidget(
+                    card: expenseCards[index],
+                    onDelete: () {
+                      deleteCard(index);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AddExpenseScreen extends StatefulWidget {
+  @override
+  _AddExpenseScreenState createState() => _AddExpenseScreenState();
+}
+
+class _AddExpenseScreenState extends State<AddExpenseScreen> {
+  TextEditingController categoryController = TextEditingController();
+  TextEditingController valueController = TextEditingController();
+
+  void addExpense() {
+    String category = categoryController.text;
+    int value = int.tryParse(valueController.text) ?? 0;
+
+    if (category.isNotEmpty && value!=0) {
+      ExpenseCard newCard = ExpenseCard(category, value);
+      Navigator.pop(context, newCard);
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Error'),
+          content: Text('Please enter a valid category and value.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue[100],
+      appBar: AppBar(
+        title: Text(
+          'Add Expense',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(),
+              ),
+            );
+
+          },
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Expense Detail',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            TextField(
+              controller: categoryController,
+              decoration: InputDecoration(
+                hintText: 'Enter a category',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Value',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            TextField(
+              controller: valueController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: '₹',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: addExpense,
+              child: Text('Add Expense'),
+              style: ElevatedButton.styleFrom(
+                primary: Theme.of(context).primaryColorDark, // Use updated accent color
+                onPrimary: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ExpenseCard {
+  final String category;
+  final int value;
+
+  ExpenseCard(this.category, this.value);
+}
+
+class ExpenseCardWidget extends StatelessWidget {
+  final ExpenseCard card;
+  final VoidCallback onDelete;
+
+  ExpenseCardWidget({required this.card, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        title: Text(
+          card.category,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('₹ ${card.value}'),
+        trailing: IconButton(
+          icon: Icon(Icons.delete),
+          onPressed: onDelete,
+        ),
+      ),
+    );
+  }
+}
+
+List<ExpenseCard> expenseCards = [];
+
